@@ -3,7 +3,9 @@ package opentelemetry
 import (
 	"flamingo.me/dingo"
 	"flamingo.me/flamingo/v3/framework/flamingo"
+	"flamingo.me/flamingo/v3/framework/systemendpoint"
 	"flamingo.me/flamingo/v3/framework/systemendpoint/domain"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	octrace "go.opencensus.io/trace"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	runtimemetrics "go.opentelemetry.io/contrib/instrumentation/runtime"
@@ -113,15 +115,10 @@ func (m *Module) Configure(injector *dingo.Injector) {
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 	// metrics
-
-	// DefaultHistogramBoundaries: []float64{1, 2, 5, 10, 20, 50},
-	// aggregation.CumulativeTemporalitySelector(),
-	// processor.WithMemory(true),
-	// controller.WithResource(resource.NewWithAttributes(schemaURL, attribute.String("service.name", m.serviceName))),
-
-	exp, err := prometheus.New()
+	bridge := opencensus.NewMetricProducer()
+	exp, err := prometheus.New(prometheus.WithProducer(bridge))
 	if err != nil {
-		log.Fatalf("Failed to initialize Prometheus exporter: %v", err)
+		log.Fatalf("failed to initialize Prometheus exporter: %v", err)
 	}
 
 	meterProvider := sdkMetric.NewMeterProvider(sdkMetric.WithReader(exp))
@@ -129,7 +126,15 @@ func (m *Module) Configure(injector *dingo.Injector) {
 	if err := runtimemetrics.Start(); err != nil {
 		log.Fatal(err)
 	}
-	injector.BindMap((*domain.Handler)(nil), "/metrics").ToInstance(exp)
+	meter = meterProvider.Meter(name, metric.WithInstrumentationVersion(SemVersion()))
+
+	injector.BindMap((*domain.Handler)(nil), "/metrics").ToInstance(promhttp.Handler())
+}
+
+func (m *Module) Depends() []dingo.Module {
+	return []dingo.Module{
+		new(systemendpoint.Module),
+	}
 }
 
 type correlationIDInjector struct {
@@ -153,14 +158,6 @@ var (
 	tracer trace.Tracer
 	meter  metric.Meter
 )
-
-func GetMeter() metric.Meter {
-	createMeterOnce.Do(func() {
-		mp := otel.GetMeterProvider()
-		meter = mp.Meter(name, metric.WithInstrumentationVersion(SemVersion()))
-	})
-	return meter
-}
 
 func (m *Module) CueConfig() string {
 	return `
