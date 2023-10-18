@@ -1,17 +1,13 @@
 package opentelemetry
 
 import (
-	"log"
-	"net/http"
-	"sync"
-
 	"flamingo.me/dingo"
+	"flamingo.me/flamingo/v3/framework/flamingo"
 	"flamingo.me/flamingo/v3/framework/systemendpoint/domain"
 	octrace "go.opencensus.io/trace"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	runtimemetrics "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/bridge/opencensus"
 	"go.opentelemetry.io/otel/exporters/jaeger"
@@ -22,13 +18,16 @@ import (
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
+	"log"
+	"net/http"
+	"sync"
 )
 
 var (
-	createTracerOnce sync.Once
-	createMeterOnce  sync.Once
-	KeyArea, _       = baggage.NewKeyProperty("area")
+	createMeterOnce sync.Once
+	KeyArea, _      = baggage.NewKeyProperty("area")
 )
 
 type Module struct {
@@ -59,12 +58,12 @@ func (m *Module) Inject(
 }
 
 const (
-	name      = "instrumentation/flamingo"
-	schemaURL = "https://flamingo.me/schemas/1.0.0"
+	name = "flamingo.me/opentelemetry"
 )
 
 func (m *Module) Configure(injector *dingo.Injector) {
 	http.DefaultTransport = &correlationIDInjector{next: otelhttp.NewTransport(http.DefaultTransport)}
+
 	// traces
 	tracerProviderOptions := make([]tracesdk.TracerProviderOption, 0, 3)
 
@@ -72,7 +71,7 @@ func (m *Module) Configure(injector *dingo.Injector) {
 	if m.jaegerEnable {
 		exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(m.jaegerEndpoint)))
 		if err != nil {
-			log.Fatalf("Failed to initialze Jeager exporter: %v", err)
+			log.Fatalf("failed to initialze Jeager exporter: %v", err)
 		}
 		tracerProviderOptions = append(tracerProviderOptions, tracesdk.WithBatcher(exp))
 	}
@@ -83,25 +82,33 @@ func (m *Module) Configure(injector *dingo.Injector) {
 			m.zipkinEndpoint,
 		)
 		if err != nil {
-			log.Fatalf("Failed to initialize Zipkin exporter: %v", err)
+			log.Fatalf("failed to initialize Zipkin exporter: %v", err)
 		}
 		tracerProviderOptions = append(tracerProviderOptions, tracesdk.WithBatcher(exp))
 	}
 
+	res, err := resource.Merge(resource.Default(),
+		resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceName(m.serviceName),
+			semconv.ServiceVersion(flamingo.AppVersion()),
+			semconv.TelemetrySDKLanguageGo,
+		))
+	if err != nil {
+		panic(err)
+	}
+
 	tracerProviderOptions = append(tracerProviderOptions,
-		tracesdk.WithResource(resource.NewWithAttributes(
-			schemaURL,
-			attribute.String("service.name", m.serviceName),
-		)),
-		tracesdk.WithSampler(tracesdk.ParentBased(tracesdk.NeverSample(),
-			tracesdk.WithLocalParentSampled(tracesdk.AlwaysSample()), tracesdk.WithLocalParentNotSampled(tracesdk.NeverSample()),
-			tracesdk.WithRemoteParentSampled(tracesdk.AlwaysSample()), tracesdk.WithRemoteParentNotSampled(tracesdk.NeverSample()),
-		)),
+		tracesdk.WithResource(res),
+		tracesdk.WithSampler(tracesdk.AlwaysSample()),
 	)
-	tp := tracesdk.NewTracerProvider(
-		tracerProviderOptions...,
-	)
+
+	tp := tracesdk.NewTracerProvider(tracerProviderOptions...)
 	otel.SetTracerProvider(tp)
+
+	tr := tp.Tracer(name, trace.WithInstrumentationVersion(SemVersion()))
+	octrace.DefaultTracer = opencensus.NewTracer(tr)
+
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/api-propagators.md#propagators-distribution
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
@@ -146,16 +153,6 @@ var (
 	tracer trace.Tracer
 	meter  metric.Meter
 )
-
-func GetTracer() trace.Tracer {
-	createTracerOnce.Do(func() {
-		tp := otel.GetTracerProvider()
-		tr := tp.Tracer(name, trace.WithInstrumentationVersion(SemVersion()))
-		octrace.DefaultTracer = opencensus.NewTracer(tr)
-		tracer = tr
-	})
-	return tracer
-}
 
 func GetMeter() metric.Meter {
 	createMeterOnce.Do(func() {
