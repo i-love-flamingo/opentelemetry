@@ -10,22 +10,22 @@ import (
 )
 
 type ConfiguredURLPrefixSampler struct {
-	Whitelist        config.Slice
-	Blacklist        config.Slice
+	Allowlist        config.Slice
+	Blocklist        config.Slice
 	AllowParentTrace bool
 }
 
 // Inject dependencies
 func (c *ConfiguredURLPrefixSampler) Inject(
 	cfg *struct {
-		Whitelist        config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.whitelist,optional"`
-		Blacklist        config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.blacklist,optional"`
+		Allowlist        config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.allowlist,optional"`
+		Blocklist        config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.blocklist,optional"`
 		AllowParentTrace bool         `inject:"config:flamingo.opentelemetry.tracing.sampler.allowParentTrace,optional"`
 	},
 ) *ConfiguredURLPrefixSampler {
 	if cfg != nil {
-		c.Whitelist = cfg.Whitelist
-		c.Blacklist = cfg.Blacklist
+		c.Allowlist = cfg.Allowlist
+		c.Blocklist = cfg.Blocklist
 		c.AllowParentTrace = cfg.AllowParentTrace
 	}
 	return c
@@ -33,8 +33,8 @@ func (c *ConfiguredURLPrefixSampler) Inject(
 
 func (c *ConfiguredURLPrefixSampler) GetFilterOption() otelhttp.Filter {
 	var allowed, blocked []string
-	_ = c.Whitelist.MapInto(&allowed)
-	_ = c.Blacklist.MapInto(&blocked)
+	_ = c.Allowlist.MapInto(&allowed)
+	_ = c.Blocklist.MapInto(&blocked)
 
 	return URLPrefixSampler(allowed, blocked, c.AllowParentTrace)
 }

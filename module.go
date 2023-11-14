@@ -213,11 +213,10 @@ flamingo: opentelemetry: {
 	}
 	serviceName: string | *"flamingo"
 	tracing: sampler: {
-		whitelist: [...string]
-		blacklist: [...string]
+		allowlist: [...string]
+		blocklist: [...string]
 		allowParentTrace: bool | *true
 	}
-	publicEndpoint: bool | *true
 }
 `
 }
