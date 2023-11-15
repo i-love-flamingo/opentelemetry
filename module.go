@@ -2,6 +2,10 @@ package opentelemetry
 
 import (
 	"context"
+	"log"
+	"net/http"
+	"net/url"
+
 	"flamingo.me/dingo"
 	"flamingo.me/flamingo/v3/framework/flamingo"
 	"flamingo.me/flamingo/v3/framework/systemendpoint"
@@ -12,6 +16,7 @@ import (
 	runtimemetrics "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/bridge/opencensus"
+
 	//nolint:staticcheck
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -24,9 +29,6 @@ import (
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
-	"log"
-	"net/http"
-	"net/url"
 )
 
 type Module struct {
