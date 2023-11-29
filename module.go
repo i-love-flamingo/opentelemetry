@@ -218,7 +218,7 @@ flamingo: opentelemetry: {
 	tracing: sampler: {
 		allowlist: [...string]
 		blocklist: [...string]
-		allowParentTrace: bool | *true
+		ignoreParentDecision: bool | *true
 	}
 }
 `

@@ -10,23 +10,23 @@ import (
 )
 
 type ConfiguredURLPrefixSampler struct {
-	Allowlist        config.Slice
-	Blocklist        config.Slice
-	AllowParentTrace bool
+	Allowlist            config.Slice
+	Blocklist            config.Slice
+	IgnoreParentDecision bool
 }
 
 // Inject dependencies
 func (c *ConfiguredURLPrefixSampler) Inject(
 	cfg *struct {
-		Allowlist        config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.allowlist,optional"`
-		Blocklist        config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.blocklist,optional"`
-		AllowParentTrace bool         `inject:"config:flamingo.opentelemetry.tracing.sampler.allowParentTrace,optional"`
+		Allowlist            config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.allowlist,optional"`
+		Blocklist            config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.blocklist,optional"`
+		IgnoreParentDecision bool         `inject:"config:flamingo.opentelemetry.tracing.sampler.ignoreParentDecision,optional"`
 	},
 ) *ConfiguredURLPrefixSampler {
 	if cfg != nil {
 		c.Allowlist = cfg.Allowlist
 		c.Blocklist = cfg.Blocklist
-		c.AllowParentTrace = cfg.AllowParentTrace
+		c.IgnoreParentDecision = cfg.IgnoreParentDecision
 	}
 	return c
 }
@@ -36,10 +36,10 @@ func (c *ConfiguredURLPrefixSampler) GetFilterOption() otelhttp.Filter {
 	_ = c.Allowlist.MapInto(&allowed)
 	_ = c.Blocklist.MapInto(&blocked)
 
-	return URLPrefixSampler(allowed, blocked, c.AllowParentTrace)
+	return URLPrefixSampler(allowed, blocked, c.IgnoreParentDecision)
 }
 
-func URLPrefixSampler(allowed, blocked []string, allowParentTrace bool) otelhttp.Filter {
+func URLPrefixSampler(allowed, blocked []string, ignoreParentDecision bool) otelhttp.Filter {
 	return func(request *http.Request) bool {
 		path := request.URL.Path
 		isParentSampled := trace.SpanContextFromContext(request.Context()).IsSampled()
@@ -55,7 +55,7 @@ func URLPrefixSampler(allowed, blocked []string, allowParentTrace bool) otelhttp
 
 		// we do not sample, unless the parent is sampled
 		if !sample {
-			return !allowParentTrace && isParentSampled
+			return !ignoreParentDecision && isParentSampled
 		}
 
 		// check sampling decision against blocked
@@ -67,6 +67,6 @@ func URLPrefixSampler(allowed, blocked []string, allowParentTrace bool) otelhttp
 		}
 
 		// we sample, or the parent sampled
-		return (!allowParentTrace && isParentSampled) || sample
+		return (!ignoreParentDecision && isParentSampled) || sample
 	}
 }
