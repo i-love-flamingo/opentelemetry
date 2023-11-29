@@ -1,5 +1,11 @@
 # Changelog
 
+## Version v0.1.1 (2023-11-29)
+
+### Fixes
+
+- rename to ignoreParentDecision (f951332e)
+
 ## Version v0.1.0 (2023-11-15)
 
 ### Features
