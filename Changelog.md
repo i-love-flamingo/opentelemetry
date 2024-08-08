@@ -1,5 +1,18 @@
 # Changelog
 
+## Version v0.1.1 (2024-08-08)
+
+### Fixes
+
+- rename to ignoreParentDecision (f951332e)
+
+### Chores and tidying
+
+- **deps:** update dependency go to v1.22.6 (#11) (18dceddd)
+- **deps:** update actions/setup-go action to v5 (#9) (4df08762)
+- **deps:** update module github.com/prometheus/client_golang to v1.19.1 (#4) (b7ff4f15)
+- **deps:** update module flamingo.me/flamingo/v3 to v3.9.0 (#3) (d506e74e)
+
 ## Version v0.1.0 (2023-11-15)
 
 ### Features
