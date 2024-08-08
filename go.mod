@@ -11,8 +11,8 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.45.0
-	go.opentelemetry.io/contrib/instrumentation/runtime v0.45.0
-	go.opentelemetry.io/otel v1.20.0
+	go.opentelemetry.io/contrib/instrumentation/runtime v0.53.0
+	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/bridge/opencensus v0.42.0
 	go.opentelemetry.io/otel/exporters/jaeger v1.17.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.20.0
@@ -21,7 +21,7 @@ require (
 	go.opentelemetry.io/otel/exporters/zipkin v1.19.0
 	go.opentelemetry.io/otel/sdk v1.20.0
 	go.opentelemetry.io/otel/sdk/metric v1.19.0
-	go.opentelemetry.io/otel/trace v1.20.0
+	go.opentelemetry.io/otel/trace v1.28.0
 )
 
 require (
@@ -34,7 +34,7 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
-	github.com/go-logr/logr v1.3.0 // indirect
+	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
@@ -57,7 +57,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/zemirco/memorystore v0.0.0-20160308183530-ecd57e5134f6 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.20.0 // indirect
-	go.opentelemetry.io/otel/metric v1.20.0 // indirect
+	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
