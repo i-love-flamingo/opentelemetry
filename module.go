@@ -17,7 +17,6 @@ import (
 	runtimemetrics "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/bridge/opencensus"
-	"go.opentelemetry.io/otel/exporters/jaeger" //nolint:staticcheck // todo: migrate
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/exporters/prometheus"
@@ -32,8 +31,6 @@ import (
 
 type Module struct {
 	serviceName      string
-	jaegerEnable     bool
-	jaegerEndpoint   string
 	zipkinEnable     bool
 	zipkinEndpoint   string
 	otlpEnableHTTP   bool
@@ -45,8 +42,6 @@ type Module struct {
 func (m *Module) Inject(
 	cfg *struct {
 		ServiceName      string `inject:"config:flamingo.opentelemetry.serviceName"`
-		JaegerEnable     bool   `inject:"config:flamingo.opentelemetry.jaeger.enable"`
-		JaegerEndpoint   string `inject:"config:flamingo.opentelemetry.jaeger.endpoint"`
 		ZipkinEnable     bool   `inject:"config:flamingo.opentelemetry.zipkin.enable"`
 		ZipkinEndpoint   string `inject:"config:flamingo.opentelemetry.zipkin.endpoint"`
 		OTLPEnableHTTP   bool   `inject:"config:flamingo.opentelemetry.otlp.http.enable"`
@@ -57,8 +52,6 @@ func (m *Module) Inject(
 ) *Module {
 	if cfg != nil {
 		m.serviceName = cfg.ServiceName
-		m.jaegerEnable = cfg.JaegerEnable
-		m.jaegerEndpoint = cfg.JaegerEndpoint
 		m.zipkinEnable = cfg.ZipkinEnable
 		m.zipkinEndpoint = cfg.ZipkinEndpoint
 
@@ -86,7 +79,6 @@ func (m *Module) initTraces() {
 	const maxTracerProviderOptions = 5
 	tracerProviderOptions := make([]tracesdk.TracerProviderOption, 0, maxTracerProviderOptions)
 
-	tracerProviderOptions = m.initJaeger(tracerProviderOptions)
 	tracerProviderOptions = m.initOTLP(tracerProviderOptions)
 	tracerProviderOptions = m.initZipkin(tracerProviderOptions)
 
@@ -114,20 +106,6 @@ func (m *Module) initTraces() {
 
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/api-propagators.md#propagators-distribution
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
-}
-
-func (m *Module) initJaeger(tracerProviderOptions []tracesdk.TracerProviderOption) []tracesdk.TracerProviderOption {
-	// Create the Jaeger exporter
-	if m.jaegerEnable {
-		exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(m.jaegerEndpoint)))
-		if err != nil {
-			log.Fatalf("failed to initialze Jeager exporter: %v", err)
-		}
-
-		tracerProviderOptions = append(tracerProviderOptions, tracesdk.WithBatcher(exp))
-	}
-
-	return tracerProviderOptions
 }
 
 func (m *Module) initOTLP(tracerProviderOptions []tracesdk.TracerProviderOption) []tracesdk.TracerProviderOption {
@@ -225,10 +203,6 @@ func (rt *correlationIDInjector) RoundTrip(req *http.Request) (*http.Response, e
 func (m *Module) CueConfig() string {
 	return `
 flamingo: opentelemetry: {
-	jaeger: {
-		enable: bool | *false
-		endpoint: string | *"http://localhost:14268/api/traces"
-	}
 	zipkin: {
 		enable: bool | *false
 		endpoint: string | *"http://localhost:9411/api/v2/spans"
