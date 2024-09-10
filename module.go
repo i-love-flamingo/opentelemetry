@@ -2,6 +2,7 @@ package opentelemetry
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -16,9 +17,7 @@ import (
 	runtimemetrics "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/bridge/opencensus"
-
-	//nolint:staticcheck
-	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/exporters/jaeger" //nolint:staticcheck // todo: migrate
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/exporters/prometheus"
@@ -68,6 +67,7 @@ func (m *Module) Inject(
 		m.otlpEnableGRPC = cfg.OTLPEnableGRPC
 		m.otlpEndpointGRPC = cfg.OTLPEndpointGRPC
 	}
+
 	return m
 }
 
@@ -83,55 +83,12 @@ func (m *Module) Configure(injector *dingo.Injector) {
 }
 
 func (m *Module) initTraces() {
-	tracerProviderOptions := make([]tracesdk.TracerProviderOption, 0, 3)
+	const maxTracerProviderOptions = 5
+	tracerProviderOptions := make([]tracesdk.TracerProviderOption, 0, maxTracerProviderOptions)
 
-	// Create the Jaeger exporter
-	if m.jaegerEnable {
-		exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(m.jaegerEndpoint)))
-		if err != nil {
-			log.Fatalf("failed to initialze Jeager exporter: %v", err)
-		}
-		tracerProviderOptions = append(tracerProviderOptions, tracesdk.WithBatcher(exp))
-	}
-
-	// Create the OTLP HTTP exporter
-	if m.otlpEnableHTTP {
-		u, err := url.Parse(m.otlpEndpointHTTP)
-		if err != nil {
-			log.Fatalf("could not parse OTLP HTTP endpoint: %v", err)
-		}
-
-		opts := []otlptracehttp.Option{
-			otlptracehttp.WithEndpoint(u.Host),
-			otlptracehttp.WithURLPath(u.Path),
-		}
-
-		exp, err := otlptracehttp.New(context.Background(), opts...)
-		if err != nil {
-			log.Fatalf("failed to initialze OTLP HTTP exporter: %v", err)
-		}
-		tracerProviderOptions = append(tracerProviderOptions, tracesdk.WithBatcher(exp))
-	}
-
-	// Create the OTLP gRPC exporter
-	if m.otlpEnableGRPC {
-		exp, err := otlptracegrpc.New(context.Background(), otlptracegrpc.WithEndpoint(m.otlpEndpointGRPC))
-		if err != nil {
-			log.Fatalf("failed to initialze OTLP gRPC exporter: %v", err)
-		}
-		tracerProviderOptions = append(tracerProviderOptions, tracesdk.WithBatcher(exp))
-	}
-
-	// Create the Zipkin exporter
-	if m.zipkinEnable {
-		exp, err := zipkin.New(
-			m.zipkinEndpoint,
-		)
-		if err != nil {
-			log.Fatalf("failed to initialize Zipkin exporter: %v", err)
-		}
-		tracerProviderOptions = append(tracerProviderOptions, tracesdk.WithBatcher(exp))
-	}
+	tracerProviderOptions = m.initJaeger(tracerProviderOptions)
+	tracerProviderOptions = m.initOTLP(tracerProviderOptions)
+	tracerProviderOptions = m.initZipkin(tracerProviderOptions)
 
 	res, err := resource.Merge(resource.Default(),
 		resource.NewWithAttributes(
@@ -159,8 +116,73 @@ func (m *Module) initTraces() {
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 }
 
+func (m *Module) initJaeger(tracerProviderOptions []tracesdk.TracerProviderOption) []tracesdk.TracerProviderOption {
+	// Create the Jaeger exporter
+	if m.jaegerEnable {
+		exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(m.jaegerEndpoint)))
+		if err != nil {
+			log.Fatalf("failed to initialze Jeager exporter: %v", err)
+		}
+
+		tracerProviderOptions = append(tracerProviderOptions, tracesdk.WithBatcher(exp))
+	}
+
+	return tracerProviderOptions
+}
+
+func (m *Module) initOTLP(tracerProviderOptions []tracesdk.TracerProviderOption) []tracesdk.TracerProviderOption {
+	// Create the OTLP HTTP exporter
+	if m.otlpEnableHTTP {
+		u, err := url.Parse(m.otlpEndpointHTTP)
+		if err != nil {
+			log.Fatalf("could not parse OTLP HTTP endpoint: %v", err)
+		}
+
+		opts := []otlptracehttp.Option{
+			otlptracehttp.WithEndpoint(u.Host),
+			otlptracehttp.WithURLPath(u.Path),
+		}
+
+		exp, err := otlptracehttp.New(context.Background(), opts...)
+		if err != nil {
+			log.Fatalf("failed to initialze OTLP HTTP exporter: %v", err)
+		}
+
+		tracerProviderOptions = append(tracerProviderOptions, tracesdk.WithBatcher(exp))
+	}
+
+	// Create the OTLP gRPC exporter
+	if m.otlpEnableGRPC {
+		exp, err := otlptracegrpc.New(context.Background(), otlptracegrpc.WithEndpoint(m.otlpEndpointGRPC))
+		if err != nil {
+			log.Fatalf("failed to initialze OTLP gRPC exporter: %v", err)
+		}
+
+		tracerProviderOptions = append(tracerProviderOptions, tracesdk.WithBatcher(exp))
+	}
+
+	return tracerProviderOptions
+}
+
+func (m *Module) initZipkin(tracerProviderOptions []tracesdk.TracerProviderOption) []tracesdk.TracerProviderOption {
+	// Create the Zipkin exporter
+	if m.zipkinEnable {
+		exp, err := zipkin.New(
+			m.zipkinEndpoint,
+		)
+		if err != nil {
+			log.Fatalf("failed to initialize Zipkin exporter: %v", err)
+		}
+
+		tracerProviderOptions = append(tracerProviderOptions, tracesdk.WithBatcher(exp))
+	}
+
+	return tracerProviderOptions
+}
+
 func (m *Module) initMetrics(injector *dingo.Injector) {
 	bridge := opencensus.NewMetricProducer()
+
 	exp, err := prometheus.New(prometheus.WithProducer(bridge))
 	if err != nil {
 		log.Fatalf("failed to initialize Prometheus exporter: %v", err)
@@ -168,6 +190,7 @@ func (m *Module) initMetrics(injector *dingo.Injector) {
 
 	meterProvider := sdkMetric.NewMeterProvider(sdkMetric.WithReader(exp))
 	otel.SetMeterProvider(meterProvider)
+
 	if err := runtimemetrics.Start(); err != nil {
 		log.Fatal(err)
 	}
@@ -190,7 +213,13 @@ func (rt *correlationIDInjector) RoundTrip(req *http.Request) (*http.Response, e
 	if span.SpanContext().IsSampled() {
 		req.Header.Add("X-Correlation-ID", span.SpanContext().TraceID().String())
 	}
-	return rt.next.RoundTrip(req)
+
+	resp, err := rt.next.RoundTrip(req)
+	if err != nil {
+		return nil, fmt.Errorf("correlationIDInjector next RoundTrip failed: %w", err)
+	}
+
+	return resp, nil
 }
 
 func (m *Module) CueConfig() string {
