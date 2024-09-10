@@ -28,6 +28,7 @@ func (c *ConfiguredURLPrefixSampler) Inject(
 		c.Blocklist = cfg.Blocklist
 		c.IgnoreParentDecision = cfg.IgnoreParentDecision
 	}
+
 	return c
 }
 

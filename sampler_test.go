@@ -1,13 +1,18 @@
-package opentelemetry
+package opentelemetry_test
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"flamingo.me/opentelemetry"
 )
 
 func TestURLPrefixSampler_SampleAll(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		path string
 		want bool
@@ -30,10 +35,13 @@ func TestURLPrefixSampler_SampleAll(t *testing.T) {
 		},
 	}
 
-	shouldSample := URLPrefixSampler(nil, nil, true)
+	shouldSample := opentelemetry.URLPrefixSampler(nil, nil, true)
+
 	for _, tt := range tests {
 		t.Run("checking path "+tt.path, func(t *testing.T) {
-			request, err := http.NewRequest(http.MethodGet, tt.path, nil)
+			t.Parallel()
+
+			request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, tt.path, nil)
 			assert.NoError(t, err)
 
 			if got := shouldSample(request); got != tt.want {
@@ -44,6 +52,8 @@ func TestURLPrefixSampler_SampleAll(t *testing.T) {
 }
 
 func TestURLPrefixSampler_SampleAllowed(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		path string
 		want bool
@@ -66,10 +76,13 @@ func TestURLPrefixSampler_SampleAllowed(t *testing.T) {
 		},
 	}
 
-	shouldSample := URLPrefixSampler([]string{"/my-path", "/nested"}, nil, true)
+	shouldSample := opentelemetry.URLPrefixSampler([]string{"/my-path", "/nested"}, nil, true)
+
 	for _, tt := range tests {
 		t.Run("checking path "+tt.path, func(t *testing.T) {
-			request, err := http.NewRequest(http.MethodGet, tt.path, nil)
+			t.Parallel()
+
+			request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, tt.path, nil)
 			assert.NoError(t, err)
 
 			if got := shouldSample(request); got != tt.want {
@@ -80,6 +93,8 @@ func TestURLPrefixSampler_SampleAllowed(t *testing.T) {
 }
 
 func TestURLPrefixSampler_SampleBlocked(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		path string
 		want bool
@@ -102,10 +117,13 @@ func TestURLPrefixSampler_SampleBlocked(t *testing.T) {
 		},
 	}
 
-	shouldSample := URLPrefixSampler(nil, []string{"/static"}, true)
+	shouldSample := opentelemetry.URLPrefixSampler(nil, []string{"/static"}, true)
+
 	for _, tt := range tests {
 		t.Run("checking path "+tt.path, func(t *testing.T) {
-			request, err := http.NewRequest(http.MethodGet, tt.path, nil)
+			t.Parallel()
+
+			request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, tt.path, nil)
 			assert.NoError(t, err)
 
 			if got := shouldSample(request); got != tt.want {
