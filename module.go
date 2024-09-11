@@ -12,7 +12,6 @@ import (
 	"flamingo.me/flamingo/v3/framework/systemendpoint"
 	"flamingo.me/flamingo/v3/framework/systemendpoint/domain"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	octrace "go.opencensus.io/trace"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	runtimemetrics "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
@@ -25,7 +24,7 @@ import (
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -40,6 +39,7 @@ type Module struct {
 }
 
 func (m *Module) Inject(
+	logger flamingo.Logger,
 	cfg *struct {
 		ServiceName      string `inject:"config:flamingo.opentelemetry.serviceName"`
 		ZipkinEnable     bool   `inject:"config:flamingo.opentelemetry.zipkin.enable"`
@@ -61,12 +61,10 @@ func (m *Module) Inject(
 		m.otlpEndpointGRPC = cfg.OTLPEndpointGRPC
 	}
 
+	otel.SetErrorHandler(newErrorHandler(logger))
+
 	return m
 }
-
-const (
-	name = "flamingo.me/opentelemetry"
-)
 
 func (m *Module) Configure(injector *dingo.Injector) {
 	http.DefaultTransport = &correlationIDInjector{next: otelhttp.NewTransport(http.DefaultTransport)}
@@ -101,15 +99,14 @@ func (m *Module) initTraces() {
 	tp := tracesdk.NewTracerProvider(tracerProviderOptions...)
 	otel.SetTracerProvider(tp)
 
-	tr := tp.Tracer(name, trace.WithInstrumentationVersion(SemVersion()))
-	octrace.DefaultTracer = opencensus.NewTracer(tr)
+	opencensus.InstallTraceBridge(opencensus.WithTracerProvider(tp))
 
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/api-propagators.md#propagators-distribution
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 }
 
+// Create the OTLP HTTP exporter
 func (m *Module) initOTLP(tracerProviderOptions []tracesdk.TracerProviderOption) []tracesdk.TracerProviderOption {
-	// Create the OTLP HTTP exporter
 	if m.otlpEnableHTTP {
 		u, err := url.Parse(m.otlpEndpointHTTP)
 		if err != nil {
@@ -119,6 +116,9 @@ func (m *Module) initOTLP(tracerProviderOptions []tracesdk.TracerProviderOption)
 		opts := []otlptracehttp.Option{
 			otlptracehttp.WithEndpoint(u.Host),
 			otlptracehttp.WithURLPath(u.Path),
+		}
+		if u.Scheme == "http" {
+			opts = append(opts, otlptracehttp.WithInsecure())
 		}
 
 		exp, err := otlptracehttp.New(context.Background(), opts...)
@@ -142,8 +142,8 @@ func (m *Module) initOTLP(tracerProviderOptions []tracesdk.TracerProviderOption)
 	return tracerProviderOptions
 }
 
+// Create the Zipkin exporter
 func (m *Module) initZipkin(tracerProviderOptions []tracesdk.TracerProviderOption) []tracesdk.TracerProviderOption {
-	// Create the Zipkin exporter
 	if m.zipkinEnable {
 		exp, err := zipkin.New(
 			m.zipkinEndpoint,
