@@ -6,8 +6,26 @@ With the OpenTelemetry module, your application automatically exports telemetry 
 This makes it easy to analyze your application's behavior and collect statistics about load and performance.
 It provides exporters for the most common tools, i.e. Jaeger, Prometheus and OTLP components.
 
-The metrics endpoint is provided under the systemendpoint. Once the module is activate you can access them
+The metrics endpoint is provided under the systemendpoint. Once the module is activated you can access them
 via `http://localhost:13210/metrics`
+
+## Usage with Flamingo core opencensus
+
+This module uses https://pkg.go.dev/go.opentelemetry.io/otel/bridge/opencensus to be compatible with Flamingo core and 
+other Flamingo modules which still use opencesus metrics and traces.
+
+You should not use `opencesus.Module` and `opentelemetry.Module` at the same time. If you want to use opentelemetry on old code, 
+only add the `opentelemetry.Module` and let the bridge automatically take care.
+
+### Bridge Limitations
+
+Please note the limitations of the bridge: https://pkg.go.dev/go.opentelemetry.io/otel/bridge/opencensus#hdr-Limitations
+
+#### Flamingo Samplers
+
+> Conversion of custom OpenCensus Samplers to OpenTelemetry is not implemented, and An error will be sent to the OpenTelemetry ErrorHandler.
+
+Flamingo's `URLPrefixSampler` and config from `flamingo.opencensus.tracing.sampler.*` will not work with the bridge.
 
 ## Module configuration
 
