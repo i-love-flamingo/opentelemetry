@@ -28,10 +28,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-const (
-	name = "flamingo.me/opentelemetry"
-)
-
 type Module struct {
 	serviceName      string
 	zipkinEnable     bool
