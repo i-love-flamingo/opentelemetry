@@ -8,7 +8,7 @@ require (
 	github.com/prometheus/client_golang v1.20.3
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0
-	go.opentelemetry.io/contrib/instrumentation/runtime v0.45.0
+	go.opentelemetry.io/contrib/instrumentation/runtime v0.54.0
 	go.opentelemetry.io/otel v1.30.0
 	go.opentelemetry.io/otel/bridge/opencensus v0.45.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.30.0
