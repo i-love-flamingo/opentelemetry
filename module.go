@@ -1,5 +1,7 @@
 package opentelemetry
 
+//go:generate go run github.com/vektra/mockery/v2@v2.45.1
+
 import (
 	"context"
 	"fmt"
@@ -68,6 +70,8 @@ func (m *Module) Inject(
 
 func (m *Module) Configure(injector *dingo.Injector) {
 	http.DefaultTransport = &correlationIDInjector{next: otelhttp.NewTransport(http.DefaultTransport)}
+
+	flamingo.BindEventSubscriber(injector).To(new(Listener))
 
 	m.initTraces()
 	m.initMetrics(injector)
