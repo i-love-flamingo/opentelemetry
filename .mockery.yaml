@@ -1,0 +1,12 @@
+with-expecter: true
+disable-version-string: true
+inpackage: false
+mockname: "{{.InterfaceName}}"
+filename: "{{.InterfaceNameSnake}}.go"
+outpkg: "mocks"
+dir: "{{.InterfaceDirRelative}}/mocks"
+
+packages:
+  "flamingo.me/opentelemetry":
+    interfaces:
+      Shutdowner:

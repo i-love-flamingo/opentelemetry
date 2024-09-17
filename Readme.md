@@ -47,7 +47,7 @@ Flamingo's `URLPrefixSampler` and config from `flamingo.opencensus.tracing.sampl
 Before you can create your own spans, you have to initialize a tracer:
 
 ```go
-tracer := otel.Tracer("my-app")
+var tracer = otel.Tracer("my-app", trace.WithInstrumentationVersion("1.2.3"))
 ```
 
 Now you can create a span based on a `context.Context`. This will automatically attach all tracing-relevant
@@ -55,10 +55,10 @@ information (e.g. trace-ID) to the span.
 
 ```go
 func doSomething(ctx context.Context) {
-ctx, span := tracer.Start(ctx, "my-span")
-defer span.End()
-
-// do some work to track with my-span	
+	ctx, span := tracer.Start(ctx, "my-span")
+	defer span.End() 
+	
+	// do some work to track with my-span
 }
 ```
 
@@ -70,14 +70,15 @@ official [OpenTelemetry documentation](https://opentelemetry.io/docs/instrumenta
 To collect your own metrics, you have to initialize a meter:
 
 ```go
-meter := otel.Meter("my-app")
+var meter = otel.Meter("my-app", metric.WithInstrumentationVersion("1.2.3"))
 ```
 
 Now you can create a new metric, e.g. a counter:
 
 ```go
-counter, _ := meter.Int64Counter("my.count",
-metric.WithDescription("count of something"),
+counter, _ := meter.Int64Counter("my.count", 
+	metric.WithDescription("count of something"),
+	metric.WithUnit("{something}")
 )
 
 counter.Add(ctx, 1)
