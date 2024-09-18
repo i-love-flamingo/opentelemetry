@@ -10,9 +10,6 @@ import (
 	"net/url"
 
 	"flamingo.me/dingo"
-	"flamingo.me/flamingo/v3/framework/flamingo"
-	"flamingo.me/flamingo/v3/framework/systemendpoint"
-	"flamingo.me/flamingo/v3/framework/systemendpoint/domain"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	runtimemetrics "go.opentelemetry.io/contrib/instrumentation/runtime"
@@ -28,10 +25,17 @@ import (
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
+
+	"flamingo.me/flamingo/v3/framework/flamingo"
+	flamingoHttp "flamingo.me/flamingo/v3/framework/http"
+	"flamingo.me/flamingo/v3/framework/systemendpoint"
+	"flamingo.me/flamingo/v3/framework/systemendpoint/domain"
 )
 
 type Module struct {
+	sampler          *ConfiguredURLPrefixSampler
 	serviceName      string
+	publicEndpoint   bool
 	zipkinEnable     bool
 	zipkinEndpoint   string
 	otlpEnableHTTP   bool
@@ -41,9 +45,11 @@ type Module struct {
 }
 
 func (m *Module) Inject(
+	sampler *ConfiguredURLPrefixSampler,
 	logger flamingo.Logger,
 	cfg *struct {
 		ServiceName      string `inject:"config:flamingo.opentelemetry.serviceName"`
+		PublicEndpoint   bool   `inject:"config:flamingo.opentelemetry.publicEndpoint"`
 		ZipkinEnable     bool   `inject:"config:flamingo.opentelemetry.zipkin.enable"`
 		ZipkinEndpoint   string `inject:"config:flamingo.opentelemetry.zipkin.endpoint"`
 		OTLPEnableHTTP   bool   `inject:"config:flamingo.opentelemetry.otlp.http.enable"`
@@ -52,11 +58,13 @@ func (m *Module) Inject(
 		OTLPEndpointGRPC string `inject:"config:flamingo.opentelemetry.otlp.grpc.endpoint"`
 	},
 ) *Module {
+	m.sampler = sampler
+
 	if cfg != nil {
 		m.serviceName = cfg.ServiceName
+		m.publicEndpoint = cfg.PublicEndpoint
 		m.zipkinEnable = cfg.ZipkinEnable
 		m.zipkinEndpoint = cfg.ZipkinEndpoint
-
 		m.otlpEnableHTTP = cfg.OTLPEnableHTTP
 		m.otlpEndpointHTTP = cfg.OTLPEndpointHTTP
 		m.otlpEnableGRPC = cfg.OTLPEnableGRPC
@@ -69,7 +77,33 @@ func (m *Module) Inject(
 }
 
 func (m *Module) Configure(injector *dingo.Injector) {
-	http.DefaultTransport = &correlationIDInjector{next: otelhttp.NewTransport(http.DefaultTransport)}
+	http.DefaultTransport = &correlationIDInjector{
+		next: otelhttp.NewTransport(http.DefaultTransport),
+	}
+
+	injector.Bind(new(flamingoHttp.HandlerWrapper)).ToProvider(func() flamingoHttp.HandlerWrapper {
+		return func(handler http.Handler) http.Handler {
+			const maxOptions = 2
+
+			startOptions := make([]otelhttp.Option, 0, maxOptions)
+			startOptions = append(
+				startOptions,
+				otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+					return operation + ": " + r.URL.Path
+				}),
+			)
+
+			if m.publicEndpoint {
+				startOptions = append(startOptions, otelhttp.WithPublicEndpoint())
+			}
+
+			return otelhttp.NewHandler(
+				handler,
+				"incoming request",
+				startOptions...,
+			)
+		}
+	})
 
 	flamingo.BindEventSubscriber(injector).To(new(Listener))
 
@@ -97,7 +131,14 @@ func (m *Module) initTraces() {
 
 	tracerProviderOptions = append(tracerProviderOptions,
 		tracesdk.WithResource(res),
-		tracesdk.WithSampler(tracesdk.AlwaysSample()),
+		tracesdk.WithSampler(
+			SpanKindSampler(
+				m.sampler,
+				map[trace.SpanKind]tracesdk.Sampler{
+					trace.SpanKindClient: tracesdk.ParentBased(tracesdk.AlwaysSample()),
+				},
+			),
+		),
 	)
 
 	tp := tracesdk.NewTracerProvider(tracerProviderOptions...)
@@ -222,10 +263,10 @@ flamingo: opentelemetry: {
 		}
 	}
 	serviceName: string | *"flamingo"
+	publicEndpoint: bool | *true
 	tracing: sampler: {
 		allowlist: [...string]
 		blocklist: [...string]
-		ignoreParentDecision: bool | *true
 	}
 }
 `

@@ -2,133 +2,287 @@ package opentelemetry_test
 
 import (
 	"context"
-	"net/http"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel/attribute"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
+
+	"flamingo.me/flamingo/v3/framework/config"
 
 	"flamingo.me/opentelemetry"
 )
 
-func TestURLPrefixSampler_SampleAll(t *testing.T) {
+func TestConfiguredURLPrefixSampler_Inject(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
+	t.Run("should panic on invalid allowlist", func(t *testing.T) {
+		t.Parallel()
+
+		sampler := new(opentelemetry.ConfiguredURLPrefixSampler)
+
+		assert.Panics(t,
+			func() {
+				sampler.Inject(
+					&struct {
+						Allowlist config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.allowlist,optional"`
+						Blocklist config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.blocklist,optional"`
+					}{
+						Allowlist: []any{"1", 2, false},
+					},
+				)
+			})
+	})
+
+	t.Run("should panic on invalid blocklist", func(t *testing.T) {
+		t.Parallel()
+
+		sampler := new(opentelemetry.ConfiguredURLPrefixSampler)
+
+		assert.Panics(t,
+			func() {
+				sampler.Inject(
+					&struct {
+						Allowlist config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.allowlist,optional"`
+						Blocklist config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.blocklist,optional"`
+					}{
+						Blocklist: []any{"1", 2, false},
+					},
+				)
+			})
+	})
+}
+
+func TestConfiguredURLPrefixSampler_ShouldSample(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		Allowlist config.Slice
+		Blocklist config.Slice
+	}
+
+	type request struct {
 		path string
-		want bool
+		want tracesdk.SamplingDecision
+	}
+
+	tests := []struct {
+		name            string
+		isParentSampled bool
+		fields          fields
+		cases           []request
 	}{
 		{
-			path: "/",
-			want: true,
+			name:            "empty lists should always be sampled",
+			isParentSampled: true,
+			cases: []request{
+				{path: "/", want: tracesdk.RecordAndSample},
+				{path: "/my-path", want: tracesdk.RecordAndSample},
+				{path: "/nested/path", want: tracesdk.RecordAndSample},
+				{path: "/static/assets/app.css", want: tracesdk.RecordAndSample},
+			},
 		},
 		{
-			path: "/my-path",
-			want: true,
+			name:            "only paths on allowlist should be sampled",
+			isParentSampled: true,
+			fields: fields{
+				Allowlist: config.Slice{"/my-path", "/nested"},
+			},
+			cases: []request{
+				{path: "/", want: tracesdk.Drop},
+				{path: "/my-path", want: tracesdk.RecordAndSample},
+				{path: "/nested/path", want: tracesdk.RecordAndSample},
+				{path: "/static/assets/app.css", want: tracesdk.Drop},
+			},
 		},
 		{
-			path: "/nested/path",
-			want: true,
+			name:            "paths on blocklist should not be sampled",
+			isParentSampled: true,
+			fields: fields{
+				Blocklist: config.Slice{"/static"},
+			},
+			cases: []request{
+				{path: "/", want: tracesdk.RecordAndSample},
+				{path: "/my-path", want: tracesdk.RecordAndSample},
+				{path: "/nested/path", want: tracesdk.RecordAndSample},
+				{path: "/static/assets/app.css", want: tracesdk.Drop},
+			},
 		},
 		{
-			path: "/static/assets/app.css",
-			want: true,
+			name:            "paths on allowlist can be negated by blocklist",
+			isParentSampled: true,
+			fields: fields{
+				Allowlist: config.Slice{"/my-path", "/nested"},
+				Blocklist: config.Slice{"/my-path"},
+			},
+			cases: []request{
+				{path: "/", want: tracesdk.Drop},
+				{path: "/my-path", want: tracesdk.Drop},
+				{path: "/nested/path", want: tracesdk.RecordAndSample},
+				{path: "/static/assets/app.css", want: tracesdk.Drop},
+			},
+		},
+		{
+			name:            "use parent decision to sample if path is not present: sample",
+			isParentSampled: true,
+			fields: fields{
+				Allowlist: config.Slice{"/my-path", "/nested"},
+				Blocklist: config.Slice{"/my-path"},
+			},
+			cases: []request{
+				{path: "", want: tracesdk.RecordAndSample},
+			},
+		},
+		{
+			name:            "use parent decision to sample if path is not present: drop",
+			isParentSampled: false,
+			fields: fields{
+				Allowlist: config.Slice{"/my-path", "/nested"},
+				Blocklist: config.Slice{"/my-path"},
+			},
+			cases: []request{
+				{path: "", want: tracesdk.Drop},
+			},
 		},
 	}
 
-	shouldSample := opentelemetry.URLPrefixSampler(nil, nil, true)
-
 	for _, tt := range tests {
-		t.Run("checking path "+tt.path, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, tt.path, nil)
-			assert.NoError(t, err)
+			sampler := new(opentelemetry.ConfiguredURLPrefixSampler).
+				Inject(
+					&struct {
+						Allowlist config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.allowlist,optional"`
+						Blocklist config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.blocklist,optional"`
+					}{
+						Allowlist: tt.fields.Allowlist,
+						Blocklist: tt.fields.Blocklist,
+					},
+				)
 
-			if got := shouldSample(request); got != tt.want {
-				t.Errorf("URLPrefixSampler.shouldSample() = %v, want %v", got, tt.want)
+			for _, ttc := range tt.cases {
+				t.Run("checking path "+ttc.path, func(t *testing.T) {
+					t.Parallel()
+
+					traceID, _ := trace.TraceIDFromHex("4bf92f3577b34da6a3ce929d0e0e4736")
+					spanID, _ := trace.SpanIDFromHex("00f067aa0ba902b7")
+					pscc := trace.SpanContextConfig{
+						TraceID: traceID,
+						SpanID:  spanID,
+					}
+
+					if tt.isParentSampled {
+						pscc.TraceFlags = trace.FlagsSampled
+					}
+
+					var values []attribute.KeyValue
+					if ttc.path != "" {
+						values = []attribute.KeyValue{
+							attribute.String("http.target", ttc.path),
+						}
+					}
+
+					got := sampler.ShouldSample(
+						tracesdk.SamplingParameters{
+							ParentContext: trace.ContextWithSpanContext(
+								context.Background(),
+								trace.NewSpanContext(pscc),
+							),
+							TraceID:    trace.TraceID{},
+							Attributes: values,
+						},
+					)
+
+					assert.Equal(t, ttc.want, got.Decision, "unexpected decision for path %q", ttc.path)
+				})
 			}
 		})
 	}
 }
 
-func TestURLPrefixSampler_SampleAllowed(t *testing.T) {
+func TestConfiguredURLPrefixSampler_Description(t *testing.T) {
 	t.Parallel()
 
+	sampler := new(opentelemetry.ConfiguredURLPrefixSampler)
+	assert.Equal(t, "ConfiguredURLPrefixSampler", sampler.Description())
+}
+
+func TestSpanKindBasedSampler_ShouldSample(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		root   tracesdk.Sampler
+		config map[trace.SpanKind]tracesdk.Sampler
+	}
+
+	type args struct {
+		kind trace.SpanKind
+	}
+
 	tests := []struct {
-		path string
-		want bool
+		name   string
+		fields fields
+		args   args
+		want   tracesdk.SamplingDecision
 	}{
 		{
-			path: "/",
-			want: false,
+			name: "fall back to root when span kind is not configured",
+			fields: fields{
+				root: tracesdk.AlwaysSample(),
+			},
+			args: args{
+				kind: trace.SpanKindServer,
+			},
+			want: tracesdk.RecordAndSample,
 		},
 		{
-			path: "/my-path",
-			want: true,
-		},
-		{
-			path: "/nested/path",
-			want: true,
-		},
-		{
-			path: "/static/assets/app.css",
-			want: false,
+			name: "use configured sampler for span kind",
+			fields: fields{
+				root: tracesdk.AlwaysSample(),
+				config: map[trace.SpanKind]tracesdk.Sampler{
+					trace.SpanKindClient: tracesdk.NeverSample(),
+				},
+			},
+			args: args{
+				kind: trace.SpanKindClient,
+			},
+			want: tracesdk.Drop,
 		},
 	}
 
-	shouldSample := opentelemetry.URLPrefixSampler([]string{"/my-path", "/nested"}, nil, true)
-
 	for _, tt := range tests {
-		t.Run("checking path "+tt.path, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, tt.path, nil)
-			assert.NoError(t, err)
-
-			if got := shouldSample(request); got != tt.want {
-				t.Errorf("URLPrefixSampler.shouldSample() = %v, want %v", got, tt.want)
-			}
+			s := opentelemetry.SpanKindSampler(tt.fields.root, tt.fields.config)
+			assert.Equalf(t,
+				tt.want,
+				s.ShouldSample(tracesdk.SamplingParameters{
+					Kind: tt.args.kind,
+				}).Decision,
+				"ShouldSample(%v)", tt.args.kind)
 		})
 	}
 }
 
-func TestURLPrefixSampler_SampleBlocked(t *testing.T) {
+func TestSpanKindBasedSampler_Description(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		path string
-		want bool
-	}{
-		{
-			path: "/",
-			want: true,
-		},
-		{
-			path: "/my-path",
-			want: true,
-		},
-		{
-			path: "/nested/path",
-			want: true,
-		},
-		{
-			path: "/static/assets/app.css",
-			want: false,
-		},
-	}
+	s := opentelemetry.SpanKindSampler(tracesdk.AlwaysSample(), map[trace.SpanKind]tracesdk.Sampler{
+		trace.SpanKindClient: tracesdk.NeverSample(),
+		trace.SpanKindServer: tracesdk.TraceIDRatioBased(.5),
+	})
 
-	shouldSample := opentelemetry.URLPrefixSampler(nil, []string{"/static"}, true)
+	expectedDescription := fmt.Sprintf("SpanKindBasedSampler{root:%s,config:{%s:%s,%s:%s}}",
+		tracesdk.AlwaysSample().Description(),
+		trace.SpanKindClient,
+		tracesdk.NeverSample().Description(),
+		trace.SpanKindServer,
+		tracesdk.TraceIDRatioBased(.5).Description(),
+	)
 
-	for _, tt := range tests {
-		t.Run("checking path "+tt.path, func(t *testing.T) {
-			t.Parallel()
-
-			request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, tt.path, nil)
-			assert.NoError(t, err)
-
-			if got := shouldSample(request); got != tt.want {
-				t.Errorf("URLPrefixSampler.shouldSample() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	assert.Equal(t, expectedDescription, s.Description())
 }
