@@ -38,17 +38,18 @@ especially when you also use the `prefixrouter.Module` in your project.
 
 ## Module configuration
 
-| Config                                             | Default Value                        | Description                                                                  |
-|----------------------------------------------------|--------------------------------------|------------------------------------------------------------------------------|
-| `flamingo.opentelemetry.serviceName`               | `flamingo`                           | serviceName is automatically added to all traces as `service.name` attribute |
-| `flamingo.opentelemetry.zipkin.enable`             | `false`                              | enables the zipkin exporter                                                  |
-| `flamingo.opentelemetry.zipkin.endpoint`           | `http://localhost:9411/api/v2/spans` | URL to the zipkin instance                                                   |
-| `flamingo.opentelemetry.otlp.http.enable`          | `false`                              | enables the OTLP HTTP exporter                                               |
-| `flamingo.opentelemetry.otlp.http.endpoint`        | `http://localhost:4318/v1/traces`    | URL to the OTLP collector                                                    |
-| `flamingo.opentelemetry.otlp.grpc.enable`          | `false`                              | enables the OTLP gRPC exporter                                               |
-| `flamingo.opentelemetry.otlp.grpc.endpoint`        | `grpc://localhost:4317/v1/traces`    | URL to the OTLP collector                                                    |
-| `flamingo.opentelemetry.tracing.sampler.allowlist` | `[]`                                 | list of URL paths that are sampled; if empty, all paths are allowed          |
-| `flamingo.opentelemetry.tracing.sampler.blocklist` | `[]`                                 | list of URL paths that are never sampled                                     |
+| Config                                             | Default Value                        | Description                                                                                  |
+|----------------------------------------------------|--------------------------------------|----------------------------------------------------------------------------------------------|
+| `flamingo.opentelemetry.serviceName`               | `flamingo`                           | serviceName is automatically added to all traces as `service.name` attribute                 |
+| `flamingo.opentelemetry.publicEndpoint`            | `true`                               | should be set to true for publicly accessible servers to not have incoming traces as parents |
+| `flamingo.opentelemetry.zipkin.enable`             | `false`                              | enables the zipkin exporter                                                                  |
+| `flamingo.opentelemetry.zipkin.endpoint`           | `http://localhost:9411/api/v2/spans` | URL to the zipkin instance                                                                   |
+| `flamingo.opentelemetry.otlp.http.enable`          | `false`                              | enables the OTLP HTTP exporter                                                               |
+| `flamingo.opentelemetry.otlp.http.endpoint`        | `http://localhost:4318/v1/traces`    | URL to the OTLP collector                                                                    |
+| `flamingo.opentelemetry.otlp.grpc.enable`          | `false`                              | enables the OTLP gRPC exporter                                                               |
+| `flamingo.opentelemetry.otlp.grpc.endpoint`        | `grpc://localhost:4317/v1/traces`    | URL to the OTLP collector                                                                    |
+| `flamingo.opentelemetry.tracing.sampler.allowlist` | `[]`                                 | list of URL paths that are sampled; if empty, all paths are allowed                          |
+| `flamingo.opentelemetry.tracing.sampler.blocklist` | `[]`                                 | list of URL paths that are never sampled                                                     |
 
 ## Adding your own tracing information
 
