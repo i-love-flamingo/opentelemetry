@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	flamingo.me/dingo v0.2.10
-	flamingo.me/flamingo/v3 v3.10.1
+	flamingo.me/flamingo/v3 v3.11.0
 	github.com/prometheus/client_golang v1.20.3
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.55.0
@@ -68,5 +68,3 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace flamingo.me/flamingo/v3 => ../flamingo //TODO replace when flamingo core is released
