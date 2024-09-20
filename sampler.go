@@ -77,7 +77,7 @@ func (c *ConfiguredURLPrefixSampler) ShouldSample(params tracesdk.SamplingParame
 
 	// empty allowed means all
 	sample := len(c.allowlist) == 0
-	// check allowed if len is > 0, and decide if we should sample
+	// decide if we should sample based on allow list
 	for _, p := range c.allowlist {
 		if strings.HasPrefix(path, p) {
 			sample = true
