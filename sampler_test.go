@@ -1,4 +1,4 @@
-package opentelemetry
+package opentelemetry //nolint:testpackage // explicit testing of private samplers
 
 import (
 	"context"
