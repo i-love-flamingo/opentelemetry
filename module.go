@@ -33,7 +33,7 @@ import (
 )
 
 type Module struct {
-	sampler          *ConfiguredURLPrefixSampler
+	sampler          *configuredURLPrefixSampler
 	serviceName      string
 	publicEndpoint   bool
 	zipkinEnable     bool
@@ -45,7 +45,7 @@ type Module struct {
 }
 
 func (m *Module) Inject(
-	sampler *ConfiguredURLPrefixSampler,
+	sampler *configuredURLPrefixSampler,
 	logger flamingo.Logger,
 	cfg *struct {
 		ServiceName      string `inject:"config:flamingo.opentelemetry.serviceName"`
@@ -132,12 +132,9 @@ func (m *Module) initTraces() {
 	tracerProviderOptions = append(tracerProviderOptions,
 		tracesdk.WithResource(res),
 		tracesdk.WithSampler(
-			SpanKindSampler(
-				m.sampler,
-				map[trace.SpanKind]tracesdk.Sampler{
-					trace.SpanKindClient: tracesdk.ParentBased(tracesdk.AlwaysSample()),
-				},
-			),
+			&alwaysSampleSpanKindClient{
+				base: m.sampler,
+			},
 		),
 	)
 

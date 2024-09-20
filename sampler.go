@@ -2,7 +2,6 @@ package opentelemetry
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
@@ -11,26 +10,25 @@ import (
 	"flamingo.me/flamingo/v3/framework/config"
 )
 
-type ConfiguredURLPrefixSampler struct {
+type configuredURLPrefixSampler struct {
 	allowlist []string
 	blocklist []string
 }
 
-type SpanKindBasedSampler struct {
-	root   tracesdk.Sampler
-	config map[trace.SpanKind]tracesdk.Sampler
+type alwaysSampleSpanKindClient struct {
+	base tracesdk.Sampler
 }
 
-var _ tracesdk.Sampler = (*ConfiguredURLPrefixSampler)(nil)
-var _ tracesdk.Sampler = (*SpanKindBasedSampler)(nil)
+var _ tracesdk.Sampler = (*configuredURLPrefixSampler)(nil)
+var _ tracesdk.Sampler = (*alwaysSampleSpanKindClient)(nil)
 
 // Inject dependencies
-func (c *ConfiguredURLPrefixSampler) Inject(
+func (c *configuredURLPrefixSampler) Inject(
 	cfg *struct {
 		Allowlist config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.allowlist,optional"`
 		Blocklist config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.blocklist,optional"`
 	},
-) *ConfiguredURLPrefixSampler {
+) *configuredURLPrefixSampler {
 	if cfg != nil {
 		var allowed, blocked []string
 
@@ -51,7 +49,7 @@ func (c *ConfiguredURLPrefixSampler) Inject(
 	return c
 }
 
-func (c *ConfiguredURLPrefixSampler) ShouldSample(params tracesdk.SamplingParameters) tracesdk.SamplingResult {
+func (c *configuredURLPrefixSampler) ShouldSample(params tracesdk.SamplingParameters) tracesdk.SamplingResult {
 	psc := trace.SpanContextFromContext(params.ParentContext)
 	path := ""
 
@@ -109,32 +107,21 @@ func (c *ConfiguredURLPrefixSampler) ShouldSample(params tracesdk.SamplingParame
 	}
 }
 
-func (c *ConfiguredURLPrefixSampler) Description() string {
-	return "ConfiguredURLPrefixSampler"
+func (c *configuredURLPrefixSampler) Description() string {
+	allowlist := strings.Join(c.allowlist, ",")
+	blocklist := strings.Join(c.blocklist, ",")
+
+	return fmt.Sprintf("ConfiguredURLPrefixSampler{allowlist:%s,blocklist:%s}", allowlist, blocklist)
 }
 
-func SpanKindSampler(root tracesdk.Sampler, config map[trace.SpanKind]tracesdk.Sampler) tracesdk.Sampler {
-	return &SpanKindBasedSampler{
-		root:   root,
-		config: config,
+func (s *alwaysSampleSpanKindClient) ShouldSample(parameters tracesdk.SamplingParameters) tracesdk.SamplingResult {
+	if parameters.Kind == trace.SpanKindClient {
+		return tracesdk.AlwaysSample().ShouldSample(parameters)
 	}
+
+	return s.base.ShouldSample(parameters)
 }
 
-func (s *SpanKindBasedSampler) ShouldSample(parameters tracesdk.SamplingParameters) tracesdk.SamplingResult {
-	if sampler, ok := s.config[parameters.Kind]; ok {
-		return sampler.ShouldSample(parameters)
-	}
-
-	return s.root.ShouldSample(parameters)
-}
-
-func (s *SpanKindBasedSampler) Description() string {
-	cfg := make([]string, 0, len(s.config))
-	for kind, sampler := range s.config {
-		cfg = append(cfg, fmt.Sprintf("%s:%s", kind.String(), sampler.Description()))
-	}
-
-	slices.Sort(cfg)
-
-	return fmt.Sprintf("SpanKindBasedSampler{root:%s,config:{%s}}", s.root.Description(), strings.Join(cfg, ","))
+func (s *alwaysSampleSpanKindClient) Description() string {
+	return fmt.Sprintf("SpanKindBasedSampler{base:%s}", s.base.Description())
 }

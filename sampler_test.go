@@ -1,4 +1,4 @@
-package opentelemetry_test
+package opentelemetry
 
 import (
 	"context"
@@ -11,8 +11,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"flamingo.me/flamingo/v3/framework/config"
-
-	"flamingo.me/opentelemetry"
 )
 
 func TestConfiguredURLPrefixSampler_Inject(t *testing.T) {
@@ -21,7 +19,7 @@ func TestConfiguredURLPrefixSampler_Inject(t *testing.T) {
 	t.Run("should panic on invalid allowlist", func(t *testing.T) {
 		t.Parallel()
 
-		sampler := new(opentelemetry.ConfiguredURLPrefixSampler)
+		sampler := new(configuredURLPrefixSampler)
 
 		assert.Panics(t,
 			func() {
@@ -39,7 +37,7 @@ func TestConfiguredURLPrefixSampler_Inject(t *testing.T) {
 	t.Run("should panic on invalid blocklist", func(t *testing.T) {
 		t.Parallel()
 
-		sampler := new(opentelemetry.ConfiguredURLPrefixSampler)
+		sampler := new(configuredURLPrefixSampler)
 
 		assert.Panics(t,
 			func() {
@@ -152,7 +150,7 @@ func TestConfiguredURLPrefixSampler_ShouldSample(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			sampler := new(opentelemetry.ConfiguredURLPrefixSampler).
+			sampler := new(configuredURLPrefixSampler).
 				Inject(
 					&struct {
 						Allowlist config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.allowlist,optional"`
@@ -206,16 +204,30 @@ func TestConfiguredURLPrefixSampler_ShouldSample(t *testing.T) {
 func TestConfiguredURLPrefixSampler_Description(t *testing.T) {
 	t.Parallel()
 
-	sampler := new(opentelemetry.ConfiguredURLPrefixSampler)
-	assert.Equal(t, "ConfiguredURLPrefixSampler", sampler.Description())
+	sampler := new(configuredURLPrefixSampler).Inject(
+		&struct {
+			Allowlist config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.allowlist,optional"`
+			Blocklist config.Slice `inject:"config:flamingo.opentelemetry.tracing.sampler.blocklist,optional"`
+		}{
+			Allowlist: config.Slice{
+				"/allow1",
+				"/allow2",
+			},
+			Blocklist: config.Slice{
+				"/block1",
+				"/block2",
+			},
+		},
+	)
+
+	assert.Equal(t, "ConfiguredURLPrefixSampler{allowlist:/allow1,/allow2,blocklist:/block1,/block2}", sampler.Description())
 }
 
 func TestSpanKindBasedSampler_ShouldSample(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
-		root   tracesdk.Sampler
-		config map[trace.SpanKind]tracesdk.Sampler
+		base tracesdk.Sampler
 	}
 
 	type args struct {
@@ -229,25 +241,22 @@ func TestSpanKindBasedSampler_ShouldSample(t *testing.T) {
 		want   tracesdk.SamplingDecision
 	}{
 		{
-			name: "fall back to root when span kind is not configured",
+			name: "always sample when span kind is client",
 			fields: fields{
-				root: tracesdk.AlwaysSample(),
+				base: tracesdk.NeverSample(),
 			},
 			args: args{
-				kind: trace.SpanKindServer,
+				kind: trace.SpanKindClient,
 			},
 			want: tracesdk.RecordAndSample,
 		},
 		{
-			name: "use configured sampler for span kind",
+			name: "fall back to base when span kind is not client",
 			fields: fields{
-				root: tracesdk.AlwaysSample(),
-				config: map[trace.SpanKind]tracesdk.Sampler{
-					trace.SpanKindClient: tracesdk.NeverSample(),
-				},
+				base: tracesdk.NeverSample(),
 			},
 			args: args{
-				kind: trace.SpanKindClient,
+				kind: trace.SpanKindServer,
 			},
 			want: tracesdk.Drop,
 		},
@@ -257,7 +266,7 @@ func TestSpanKindBasedSampler_ShouldSample(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			s := opentelemetry.SpanKindSampler(tt.fields.root, tt.fields.config)
+			s := &alwaysSampleSpanKindClient{base: tt.fields.base}
 			assert.Equalf(t,
 				tt.want,
 				s.ShouldSample(tracesdk.SamplingParameters{
@@ -271,17 +280,10 @@ func TestSpanKindBasedSampler_ShouldSample(t *testing.T) {
 func TestSpanKindBasedSampler_Description(t *testing.T) {
 	t.Parallel()
 
-	s := opentelemetry.SpanKindSampler(tracesdk.AlwaysSample(), map[trace.SpanKind]tracesdk.Sampler{
-		trace.SpanKindClient: tracesdk.NeverSample(),
-		trace.SpanKindServer: tracesdk.TraceIDRatioBased(.5),
-	})
+	s := &alwaysSampleSpanKindClient{base: tracesdk.AlwaysSample()}
 
-	expectedDescription := fmt.Sprintf("SpanKindBasedSampler{root:%s,config:{%s:%s,%s:%s}}",
+	expectedDescription := fmt.Sprintf("SpanKindBasedSampler{base:%s}",
 		tracesdk.AlwaysSample().Description(),
-		trace.SpanKindClient,
-		tracesdk.NeverSample().Description(),
-		trace.SpanKindServer,
-		tracesdk.TraceIDRatioBased(.5).Description(),
 	)
 
 	assert.Equal(t, expectedDescription, s.Description())
