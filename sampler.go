@@ -15,6 +15,7 @@ type configuredURLPrefixSampler struct {
 	blocklist []string
 }
 
+// alwaysSampleSpanKindClient enforces sampling of outgoing http requests (client)
 type alwaysSampleSpanKindClient struct {
 	base tracesdk.Sampler
 }
