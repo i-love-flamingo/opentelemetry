@@ -1,6 +1,6 @@
 package opentelemetry
 
-//go:generate go run github.com/vektra/mockery/v2@v2.46.3
+//go:generate go run github.com/vektra/mockery/v2@v2.50.0
 
 import (
 	"context"
