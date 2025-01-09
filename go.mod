@@ -5,7 +5,7 @@ go 1.22.7
 toolchain go1.23.4
 
 require (
-	flamingo.me/dingo v0.2.10
+	flamingo.me/dingo v0.3.0
 	flamingo.me/flamingo/v3 v3.11.0
 	github.com/prometheus/client_golang v1.20.5
 	github.com/stretchr/testify v1.10.0
