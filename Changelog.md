@@ -1,5 +1,11 @@
 # Changelog
 
+## Version v0.2.2 (2025-02-17)
+
+### Chores and tidying
+
+- bump go in pipeline (6a83761a)
+
 ## Version v0.2.1 (2025-02-17)
 
 ### Chores and tidying
