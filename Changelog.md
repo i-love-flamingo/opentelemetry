@@ -1,5 +1,21 @@
 # Changelog
 
+## Version v0.2.1 (2025-02-17)
+
+### Chores and tidying
+
+- **deps:** update opentelemetry-go-contrib monorepo to v0.59.0 (#40) (a66fa445)
+- **deps:** update opentelemetry-go monorepo (#43) (94cff2dc)
+- **deps:** update module flamingo.me/flamingo/v3 to v3.13.0 (#41) (a1ddcfc7)
+- **deps:** update module flamingo.me/dingo to v0.3.0 (#39) (d57842de)
+- **deps:** update opentelemetry-go monorepo (#34) (bb02dbd6)
+- **deps:** update module go.opentelemetry.io/contrib/instrumentation/runtime to v0.56.0 (#32) (e6469a15)
+- **deps:** update module go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp to v0.56.0 (#31) (a6d1d956)
+- **deps:** update opentelemetry-go monorepo (#30) (62c03d0d)
+- **deps:** update module github.com/prometheus/client_golang to v1.20.5 (#33) (2d2b18ce)
+- **deps:** update module github.com/vektra/mockery/v2 to v2.46.3 (#29) (978f8c91)
+- **deps:** update module github.com/vektra/mockery/v2 to v2.46.1 (#27) (d9350926)
+
 ## Version v0.2.0 (2024-09-24)
 
 ### Features
