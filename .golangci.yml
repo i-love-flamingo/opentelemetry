@@ -1,29 +1,17 @@
-# Options for analysis running.
+version: "2"
 run:
   concurrency: 4
-  timeout: 5m
-  tests: true
   modules-download-mode: readonly
+  tests: true
   allow-parallel-runners: false
-
-# output configuration options
 output:
-  # Format: colored-line-number|line-number|json|tab|checkstyle|code-climate|junit-xml|github-actions
-  #
-  # Multiple can be specified by separating them by comma, output can be provided
-  # for each of them by separating format name and path by colon symbol.
-  # Output path can be either `stdout`, `stderr` or path to the file to write to.
-  # Example: "checkstyle:report.json,colored-line-number"
-  #
-  # Default: colored-line-number
   formats:
-    - format: tab
-  print-issued-lines: true
-  print-linter-name: true
-  sort-results: true
-
+    tab:
+      path: stdout
+      print-linter-name: true
+      colors: false
 linters:
-  disable-all: true
+  default: none
   enable:
     - bidichk
     - bodyclose
@@ -42,10 +30,8 @@ linters:
     - gocognit
     - goconst
     - gocritic
-    - gofmt
     - gomoddirectives
     - gosec
-    - gosimple
     - govet
     - grouper
     - ineffassign
@@ -67,7 +53,6 @@ linters:
     - testpackage
     - thelper
     - tparallel
-    - typecheck
     - unconvert
     - unparam
     - unused
@@ -76,39 +61,57 @@ linters:
     - varnamelen
     - wrapcheck
     - wsl
-
+  settings:
+    mnd:
+      ignored-functions:
+        - context.WithTimeout
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    revive:
+      rules:
+        - name: var-naming
+          disabled: true
+    varnamelen:
+      max-distance: 10
+      ignore-names:
+        - err
+        - id
+      ignore-type-assert-ok: true
+      ignore-map-index-ok: true
+      ignore-chan-recv-ok: true
+      ignore-decls:
+        - i int
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - containedctx
+          - err113
+          - forcetypeassert
+          - goconst
+          - varnamelen
+          - wrapcheck
+        path: _test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
+  uniq-by-line: true
   new: false
   fix: false
-  uniq-by-line: true
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - containedctx
-        - err113
-        - forcetypeassert
-        - goconst
-        - varnamelen
-        - wrapcheck
-
-linters-settings:
-  mnd:
-    ignored-functions:
-      - context.WithTimeout
-  nolintlint:
-    require-specific: true
-    require-explanation: true
-  revive:
-    rules:
-      - name: var-naming
-        disabled: true
-  varnamelen:
-    max-distance: 10
-    ignore-type-assert-ok: true
-    ignore-map-index-ok: true
-    ignore-chan-recv-ok: true
-    ignore-names:
-      - err
-      - id
-    ignore-decls:
-      - i int
+formatters:
+  enable:
+    - gofmt
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
