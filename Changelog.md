@@ -1,5 +1,12 @@
 # Changelog
 
+## Version v0.2.2 (2025-07-10)
+
+### Chores and tidying
+
+- migrate golangci-lint to v2 (#53) (16592405)
+- bump go in pipeline (6a83761a)
+
 ## Version v0.2.1 (2025-02-17)
 
 ### Chores and tidying
