@@ -53,15 +53,21 @@ func (c *configuredURLPrefixSampler) Inject(
 func (c *configuredURLPrefixSampler) ShouldSample(params tracesdk.SamplingParameters) tracesdk.SamplingResult {
 	psc := trace.SpanContextFromContext(params.ParentContext)
 	path := ""
+	query := ""
 
 	for _, attr := range params.Attributes {
-		if attr.Key == "http.target" {
+		if attr.Key == "url.path" {
 			path = attr.Value.AsString()
+		}
+		if attr.Key == "url.query" {
+			query = attr.Value.AsString()
 		}
 	}
 
+	target := path + query
+
 	// if this is not an incoming request, we decide by parent span
-	if path == "" {
+	if target == "" {
 		decision := tracesdk.Drop
 
 		if psc.IsSampled() {
@@ -78,7 +84,7 @@ func (c *configuredURLPrefixSampler) ShouldSample(params tracesdk.SamplingParame
 	sample := len(c.allowlist) == 0
 	// decide if we should sample based on allow list
 	for _, p := range c.allowlist {
-		if strings.HasPrefix(path, p) {
+		if strings.HasPrefix(target, p) {
 			sample = true
 			break
 		}
@@ -94,7 +100,7 @@ func (c *configuredURLPrefixSampler) ShouldSample(params tracesdk.SamplingParame
 
 	// check sampling decision against blocked
 	for _, p := range c.blocklist {
-		if strings.HasPrefix(path, p) {
+		if strings.HasPrefix(target, p) {
 			return tracesdk.SamplingResult{
 				Decision:   tracesdk.Drop,
 				Tracestate: psc.TraceState(),
