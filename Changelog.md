@@ -1,5 +1,15 @@
 # Changelog
 
+## Version v0.2.2 (2025-08-12)
+
+### Chores and tidying
+
+- **deps:** update dependency go to v1.24.6 (#46) (700ac435)
+- **deps:** update module flamingo.me/flamingo/v3 to v3.16.0 (#52) (66cfcdf9)
+- **deps:** update actions/checkout action to v5 (#54) (78fc1b1f)
+- migrate golangci-lint to v2 (#53) (16592405)
+- bump go in pipeline (6a83761a)
+
 ## Version v0.2.1 (2025-02-17)
 
 ### Chores and tidying
