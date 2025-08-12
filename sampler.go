@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 	"go.opentelemetry.io/otel/trace"
 
 	"flamingo.me/flamingo/v3/framework/config"
@@ -52,19 +53,7 @@ func (c *configuredURLPrefixSampler) Inject(
 
 func (c *configuredURLPrefixSampler) ShouldSample(params tracesdk.SamplingParameters) tracesdk.SamplingResult {
 	psc := trace.SpanContextFromContext(params.ParentContext)
-	path := ""
-	query := ""
-
-	for _, attr := range params.Attributes {
-		if attr.Key == "url.path" {
-			path = attr.Value.AsString()
-		}
-		if attr.Key == "url.query" {
-			query = attr.Value.AsString()
-		}
-	}
-
-	target := path + query
+	target := extractTarget(params)
 
 	// if this is not an incoming request, we decide by parent span
 	if target == "" {
@@ -112,6 +101,23 @@ func (c *configuredURLPrefixSampler) ShouldSample(params tracesdk.SamplingParame
 		Decision:   tracesdk.RecordAndSample,
 		Tracestate: psc.TraceState(),
 	}
+}
+
+func extractTarget(params tracesdk.SamplingParameters) string {
+	path := ""
+	query := ""
+
+	for _, attr := range params.Attributes {
+		if attr.Key == semconv.URLPathKey {
+			path = attr.Value.AsString()
+		}
+
+		if attr.Key == semconv.URLQueryKey {
+			query = attr.Value.AsString()
+		}
+	}
+
+	return path + query
 }
 
 func (c *configuredURLPrefixSampler) Description() string {
