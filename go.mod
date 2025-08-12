@@ -2,7 +2,7 @@ module flamingo.me/opentelemetry
 
 go 1.23.7
 
-toolchain go1.24.0
+toolchain go1.24.6
 
 require (
 	flamingo.me/dingo v0.3.0
