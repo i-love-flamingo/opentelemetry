@@ -1,16 +1,20 @@
 {
-    "extends": [
-      "config:base",
-      ":semanticCommitTypeAll(chore)"
-    ],
-    "regexManagers": [
-      {
-        "description": "Update go run/go install dependencies",
-        "fileMatch": [".*\\.go$", "Makefile"],
-        "matchStrings": [
-          "\\s*go (run|install) (?<depName>([^@]+)?).*@(?<currentValue>[^\\s]+)"
-        ],
-        "datasourceTemplate": "go"
-      }
-    ]
-  }
+  "extends": [
+    "config:recommended",
+    ":semanticCommitTypeAll(chore)"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update go run/go install dependencies",
+      "managerFilePatterns": [
+        "/.*\\.go$/",
+        "/Makefile/"
+      ],
+      "matchStrings": [
+        "\\s*go (run|install) (?<depName>([^@]+)?).*@(?<currentValue>[^\\s]+)"
+      ],
+      "datasourceTemplate": "go"
+    }
+  ]
+}
