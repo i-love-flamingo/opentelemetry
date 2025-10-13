@@ -24,7 +24,7 @@ jobs:
           check-latest: true
       - name: Test
         env:
-          GOTOOLCHAIN: '1.25.1+auto'
+          GOTOOLCHAIN: 'go1.25.1+auto'
         run: CGO_ENABLED=1 go test -race ./...
   coverage:
     runs-on: ubuntu-latest
