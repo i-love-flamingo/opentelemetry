@@ -1,5 +1,21 @@
 # Changelog
 
+## Version v0.2.2 (2025-10-16)
+
+### Chores and tidying
+
+- **deps:** update dependency go to v1.25.3 (#61) (71b47fd2)
+- **config:** migrate renovate config (#60) (4f1e3490)
+- **deps:** update module github.com/vektra/mockery/v2 to v2.53.5 (#37) (06c0295c)
+- **deps:** update dependency go to v1.25.2 (#55) (d78a73f2)
+- bump versions (#59) (c4dca21c)
+- **deps:** update actions/setup-go action to v6 (#57) (7cb97b26)
+- **deps:** update dependency go to v1.24.6 (#46) (700ac435)
+- **deps:** update module flamingo.me/flamingo/v3 to v3.16.0 (#52) (66cfcdf9)
+- **deps:** update actions/checkout action to v5 (#54) (78fc1b1f)
+- migrate golangci-lint to v2 (#53) (16592405)
+- bump go in pipeline (6a83761a)
+
 ## Version v0.2.1 (2025-02-17)
 
 ### Chores and tidying
