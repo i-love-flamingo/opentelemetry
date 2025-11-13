@@ -11,6 +11,7 @@ import (
 
 	"flamingo.me/dingo"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/otlptranslator"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	runtimemetrics "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
@@ -33,29 +34,31 @@ import (
 )
 
 type Module struct {
-	sampler          *configuredURLPrefixSampler
-	serviceName      string
-	publicEndpoint   bool
-	zipkinEnable     bool
-	zipkinEndpoint   string
-	otlpEnableHTTP   bool
-	otlpEndpointHTTP string
-	otlpEnableGRPC   bool
-	otlpEndpointGRPC string
+	sampler                          *configuredURLPrefixSampler
+	serviceName                      string
+	publicEndpoint                   bool
+	zipkinEnable                     bool
+	zipkinEndpoint                   string
+	otlpEnableHTTP                   bool
+	otlpEndpointHTTP                 string
+	otlpEnableGRPC                   bool
+	otlpEndpointGRPC                 string
+	legacyPrometheusNamingSanitation bool
 }
 
 func (m *Module) Inject(
 	sampler *configuredURLPrefixSampler,
 	logger flamingo.Logger,
 	cfg *struct {
-		ServiceName      string `inject:"config:flamingo.opentelemetry.serviceName"`
-		PublicEndpoint   bool   `inject:"config:flamingo.opentelemetry.publicEndpoint"`
-		ZipkinEnable     bool   `inject:"config:flamingo.opentelemetry.zipkin.enable"`
-		ZipkinEndpoint   string `inject:"config:flamingo.opentelemetry.zipkin.endpoint"`
-		OTLPEnableHTTP   bool   `inject:"config:flamingo.opentelemetry.otlp.http.enable"`
-		OTLPEndpointHTTP string `inject:"config:flamingo.opentelemetry.otlp.http.endpoint"`
-		OTLPEnableGRPC   bool   `inject:"config:flamingo.opentelemetry.otlp.grpc.enable"`
-		OTLPEndpointGRPC string `inject:"config:flamingo.opentelemetry.otlp.grpc.endpoint"`
+		ServiceName                      string `inject:"config:flamingo.opentelemetry.serviceName"`
+		PublicEndpoint                   bool   `inject:"config:flamingo.opentelemetry.publicEndpoint"`
+		ZipkinEnable                     bool   `inject:"config:flamingo.opentelemetry.zipkin.enable"`
+		ZipkinEndpoint                   string `inject:"config:flamingo.opentelemetry.zipkin.endpoint"`
+		OTLPEnableHTTP                   bool   `inject:"config:flamingo.opentelemetry.otlp.http.enable"`
+		OTLPEndpointHTTP                 string `inject:"config:flamingo.opentelemetry.otlp.http.endpoint"`
+		OTLPEnableGRPC                   bool   `inject:"config:flamingo.opentelemetry.otlp.grpc.enable"`
+		OTLPEndpointGRPC                 string `inject:"config:flamingo.opentelemetry.otlp.grpc.endpoint"`
+		LegacyPrometheusNamingSanitation bool   `inject:"config:flamingo.opentelemetry.legacyPrometheusNamingSanitation,optional"`
 	},
 ) *Module {
 	m.sampler = sampler
@@ -69,6 +72,7 @@ func (m *Module) Inject(
 		m.otlpEndpointHTTP = cfg.OTLPEndpointHTTP
 		m.otlpEnableGRPC = cfg.OTLPEnableGRPC
 		m.otlpEndpointGRPC = cfg.OTLPEndpointGRPC
+		m.legacyPrometheusNamingSanitation = cfg.LegacyPrometheusNamingSanitation
 	}
 
 	otel.SetErrorHandler(newErrorHandler(logger))
@@ -201,9 +205,17 @@ func (m *Module) initZipkin(tracerProviderOptions []tracesdk.TracerProviderOptio
 }
 
 func (m *Module) initMetrics(injector *dingo.Injector) {
-	bridge := opencensus.NewMetricProducer()
+	options := []prometheus.Option{
+		prometheus.WithProducer(opencensus.NewMetricProducer()),
+	}
 
-	exp, err := prometheus.New(prometheus.WithProducer(bridge))
+	if m.legacyPrometheusNamingSanitation {
+		options = append(options, prometheus.WithTranslationStrategy(otlptranslator.UnderscoreEscapingWithSuffixes))
+	}
+
+	exp, err := prometheus.New(
+		options...,
+	)
 	if err != nil {
 		log.Fatalf("failed to initialize Prometheus exporter: %v", err)
 	}
@@ -265,6 +277,7 @@ flamingo: opentelemetry: {
 		allowlist: [...string]
 		blocklist: [...string]
 	}
+	legacyPrometheusNamingSanitation: bool | *true
 }
 `
 }
