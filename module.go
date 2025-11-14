@@ -58,7 +58,7 @@ func (m *Module) Inject(
 		OTLPEndpointHTTP                 string `inject:"config:flamingo.opentelemetry.otlp.http.endpoint"`
 		OTLPEnableGRPC                   bool   `inject:"config:flamingo.opentelemetry.otlp.grpc.enable"`
 		OTLPEndpointGRPC                 string `inject:"config:flamingo.opentelemetry.otlp.grpc.endpoint"`
-		LegacyPrometheusNamingSanitation bool   `inject:"config:flamingo.opentelemetry.legacyPrometheusNamingSanitation,optional"`
+		LegacyPrometheusNamingSanitation bool   `inject:"config:flamingo.opentelemetry.legacyPrometheusNamingSanitation"`
 	},
 ) *Module {
 	m.sampler = sampler
