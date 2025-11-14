@@ -1,10 +1,8 @@
-with-expecter: true
-disable-version-string: true
-inpackage: false
-mockname: "{{.InterfaceName}}"
-filename: "{{.InterfaceNameSnake}}.go"
-outpkg: "mocks"
+structname: "{{.InterfaceName}}"
+filename: "{{.InterfaceName | snakecase }}.go"
+pkgname: "mocks"
 dir: "{{.InterfaceDirRelative}}/mocks"
+template: testify
 
 packages:
   "flamingo.me/opentelemetry":
