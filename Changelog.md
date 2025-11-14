@@ -1,5 +1,13 @@
 # Changelog
 
+## Version v0.3.1 (2025-11-14)
+
+### Chores and tidying
+
+- **deps:** update dependency go to v1.25.4 (#63) (021c577a)
+- **deps:** update golangci/golangci-lint-action action to v9 (#64) (9ae70692)
+- **deps:** update module github.com/vektra/mockery/v2 to v3 (#62) (adf3a0be)
+
 ## Version v0.3.0 (2025-11-14)
 
 ### Features
