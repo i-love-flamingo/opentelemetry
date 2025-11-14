@@ -1,5 +1,11 @@
 # Changelog
 
+## Version v0.3.0 (2025-11-14)
+
+### Features
+
+- **65:** add optional naming sanitation for prometheus metrics (#66) (e306ff73)
+
 ## Version v0.2.2 (2025-10-16)
 
 ### Chores and tidying
