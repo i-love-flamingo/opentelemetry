@@ -117,8 +117,8 @@ func (m *Module) Configure(injector *dingo.Injector) {
 
 func (m *Module) initTraces() {
 	const maxTracerProviderOptions = 5
-	tracerProviderOptions := make([]tracesdk.TracerProviderOption, 0, maxTracerProviderOptions)
 
+	tracerProviderOptions := make([]tracesdk.TracerProviderOption, 0, maxTracerProviderOptions)
 	tracerProviderOptions = m.initOTLP(tracerProviderOptions)
 	tracerProviderOptions = m.initZipkin(tracerProviderOptions)
 
