@@ -1,5 +1,16 @@
 # Changelog
 
+## Version v0.3.2 (2025-11-20)
+
+### Fixes
+
+- fix sampling by target (#71) (eeb541fb)
+
+### Chores and tidying
+
+- switch to wsl_v5 (#73) (a4f2c46d)
+- **deps:** update module github.com/vektra/mockery/v3 to v3.6.1 (#69) (f8dc2978)
+
 ## Version v0.3.1 (2025-11-14)
 
 ### Chores and tidying
