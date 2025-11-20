@@ -179,7 +179,7 @@ func TestConfiguredURLPrefixSampler_ShouldSample(t *testing.T) {
 					var values []attribute.KeyValue
 					if ttc.path != "" {
 						values = []attribute.KeyValue{
-							attribute.String("http.target", ttc.path),
+							attribute.String("url.path", ttc.path),
 						}
 					}
 

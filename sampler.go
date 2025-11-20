@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.opentelemetry.io/otel/trace"
 
 	"flamingo.me/flamingo/v3/framework/config"
@@ -52,16 +53,10 @@ func (c *configuredURLPrefixSampler) Inject(
 
 func (c *configuredURLPrefixSampler) ShouldSample(params tracesdk.SamplingParameters) tracesdk.SamplingResult {
 	psc := trace.SpanContextFromContext(params.ParentContext)
-	path := ""
-
-	for _, attr := range params.Attributes {
-		if attr.Key == "http.target" {
-			path = attr.Value.AsString()
-		}
-	}
+	target := extractTarget(params)
 
 	// if this is not an incoming request, we decide by parent span
-	if path == "" {
+	if target == "" {
 		decision := tracesdk.Drop
 
 		if psc.IsSampled() {
@@ -76,15 +71,15 @@ func (c *configuredURLPrefixSampler) ShouldSample(params tracesdk.SamplingParame
 
 	// empty allowed means all
 	sample := len(c.allowlist) == 0
-	// decide if we should sample based on allow list
+	// decide if we should sample based on the allowlist
 	for _, p := range c.allowlist {
-		if strings.HasPrefix(path, p) {
+		if strings.HasPrefix(target, p) {
 			sample = true
 			break
 		}
 	}
 
-	// we do not sample, unless the parent is sampled
+	// we do not sample unless the parent is sampled
 	if !sample {
 		return tracesdk.SamplingResult{
 			Decision:   tracesdk.Drop,
@@ -94,7 +89,7 @@ func (c *configuredURLPrefixSampler) ShouldSample(params tracesdk.SamplingParame
 
 	// check sampling decision against blocked
 	for _, p := range c.blocklist {
-		if strings.HasPrefix(path, p) {
+		if strings.HasPrefix(target, p) {
 			return tracesdk.SamplingResult{
 				Decision:   tracesdk.Drop,
 				Tracestate: psc.TraceState(),
@@ -106,6 +101,23 @@ func (c *configuredURLPrefixSampler) ShouldSample(params tracesdk.SamplingParame
 		Decision:   tracesdk.RecordAndSample,
 		Tracestate: psc.TraceState(),
 	}
+}
+
+func extractTarget(params tracesdk.SamplingParameters) string {
+	path := ""
+	query := ""
+
+	for _, attr := range params.Attributes {
+		if attr.Key == semconv.URLPathKey {
+			path = attr.Value.AsString()
+		}
+
+		if attr.Key == semconv.URLQueryKey {
+			query = attr.Value.AsString()
+		}
+	}
+
+	return path + query
 }
 
 func (c *configuredURLPrefixSampler) Description() string {
