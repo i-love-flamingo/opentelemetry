@@ -19,12 +19,12 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/exporters/prometheus"
-	"go.opentelemetry.io/otel/exporters/zipkin"
+	"go.opentelemetry.io/otel/exporters/zipkin" //nolint:staticcheck // the deprecated integration will be removed in issue https://github.com/i-love-flamingo/opentelemetry/issues/82
 	"go.opentelemetry.io/otel/propagation"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.39.0"
 	"go.opentelemetry.io/otel/trace"
 
 	"flamingo.me/flamingo/v3/framework/flamingo"
