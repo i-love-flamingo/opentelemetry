@@ -1,5 +1,17 @@
 # Changelog
 
+## Version v0.3.3 (2026-02-11)
+
+### Chores and tidying
+
+- use mockery via go tools (#83) (0987f451)
+- **deps:** update opentelemetry-go-contrib monorepo to v0.65.0 (#77) (2b8210c6)
+- **deps:** update actions/checkout action to v6 (#74) (94f8dbdd)
+- **deps:** update opentelemetry-go monorepo (#76) (3b779b6c)
+- bump to go 1.25 (toolchain 1.26) (#81) (7eaa51c0)
+- **deps:** update module github.com/vektra/mockery/v3 to v3.6.3 (#79) (4408812c)
+- **deps:** update module flamingo.me/flamingo/v3 to v3.17.1 (#78) (9fc6baff)
+
 ## Version v0.3.2 (2025-11-20)
 
 ### Fixes
