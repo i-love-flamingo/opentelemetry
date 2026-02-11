@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/exporters/prometheus"
-	"go.opentelemetry.io/otel/exporters/zipkin"
+	"go.opentelemetry.io/otel/exporters/zipkin" // nolint staticcheck // the deprecated integration will be removed in issue https://github.com/i-love-flamingo/opentelemetry/issues/82
 	"go.opentelemetry.io/otel/propagation"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
