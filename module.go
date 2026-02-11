@@ -98,7 +98,7 @@ func (m *Module) Configure(injector *dingo.Injector) {
 			)
 
 			if m.publicEndpoint {
-				startOptions = append(startOptions, otelhttp.WithPublicEndpoint())
+				startOptions = append(startOptions, otelhttp.WithPublicEndpointFn(func(*http.Request) bool { return true }))
 			}
 
 			return otelhttp.NewHandler(
