@@ -1,5 +1,15 @@
 # Changelog
 
+## Version v0.3.4 (2026-04-16)
+
+### Chores and tidying
+
+- **deps:** update module flamingo.me/flamingo/v3 to v3.17.3 (#90) (28e7e42f)
+- **deps:** update dependency golangci/golangci-lint to v2.11.4 (#87) (46823649)
+- **deps:** update marocchino/sticky-pull-request-comment action to v3 (#95) (ff924f9e)
+- **deps:** update dependency go to v1.26.2 (#88) (587e98da)
+- **deps:** update OTel dependencies to fix vulnerabilities [security] (#93) (27c2978b)
+
 ## Version v0.3.3 (2026-02-11)
 
 ### Chores and tidying
