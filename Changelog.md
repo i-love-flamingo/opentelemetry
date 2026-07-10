@@ -1,5 +1,15 @@
 # Changelog
 
+## Version v0.3.5 (2026-07-10)
+
+### Chores and tidying
+
+- **deps:** update actions/checkout action to v7 (#102) (17b422d2)
+- **deps:** update module github.com/vektra/mockery/v3 to v3.7.1 (#100) (d5782a6a)
+- **deps:** update go toolchain directive to v1.26.5 (#97) (9e939b59)
+- **deps:** update dependency golangci/golangci-lint to v2.12.2 (#96) (8ca8eaca)
+- **dep:** update OTel dependencies (#101) (7500f7d4)
+
 ## Version v0.3.4 (2026-04-16)
 
 ### Chores and tidying
