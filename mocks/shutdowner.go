@@ -61,7 +61,7 @@ type Shutdowner_Shutdown_Call struct {
 
 // Shutdown is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *Shutdowner_Expecter) Shutdown(ctx interface{}) *Shutdowner_Shutdown_Call {
+func (_e *Shutdowner_Expecter) Shutdown(ctx any) *Shutdowner_Shutdown_Call {
 	return &Shutdowner_Shutdown_Call{Call: _e.mock.On("Shutdown", ctx)}
 }
 
