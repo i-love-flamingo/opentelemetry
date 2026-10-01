@@ -1,5 +1,23 @@
 # Changelog
 
+## Version v0.3.6 (2026-10-01)
+
+### Fixes
+
+- **deps:** patch vulnerable modules and scan with govulncheck (#119) (7353ba23)
+
+### Chores and tidying
+
+- **deps:** update module flamingo.me/dingo to v0.4.1 (#104) (8d2877a0)
+- **deps:** update module flamingo.me/flamingo/v3 to v3.17.4 (#105) (c3414cb9)
+- **deps:** update module github.com/vektra/mockery/v3 to v3.8.0 (#108) (57a8d6ed)
+- **deps:** update module go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc to v1.46.0 [security] (#114) (0e1d1036)
+- **deps:** update opentelemetry-go monorepo (#109) (b1b1e7cf)
+- **deps:** update module go.opentelemetry.io/otel/sdk to v1.46.0 [security] (#117) (474c1b67)
+- update testify, drop the toolchain directive and align CI job names (#112) (e05076dc)
+- **deps:** update dependency golangci/golangci-lint to v2.13.2 (#113) (81bec5db)
+- **deps:** update actions/setup-go action to v7 (#106) (810c293c)
+
 ## Version v0.3.5 (2026-07-10)
 
 ### Chores and tidying
