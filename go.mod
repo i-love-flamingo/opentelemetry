@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	flamingo.me/dingo v0.3.0
-	flamingo.me/flamingo/v3 v3.17.3
+	flamingo.me/flamingo/v3 v3.17.4
 	github.com/prometheus/client_golang v1.24.1
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/stretchr/testify v1.12.1
@@ -66,7 +66,7 @@ require (
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/rbcervilla/redisstore/v9 v9.0.0 // indirect
-	github.com/redis/go-redis/v9 v9.18.0 // indirect
+	github.com/redis/go-redis/v9 v9.21.0 // indirect
 	github.com/rs/zerolog v1.34.0 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
