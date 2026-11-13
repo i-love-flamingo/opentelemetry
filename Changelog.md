@@ -1,5 +1,12 @@
 # Changelog
 
+## Version v0.3.7 (2026-11-13)
+
+### Chores and tidying
+
+- **deps:** update dependency golangci/golangci-lint to v2.15.0 (#126) (f0851a2d)
+- **deps:** update module github.com/vektra/mockery/v3 to v3.9.1 (#128) (69e08fe5)
+
 ## Version v0.3.6 (2026-10-01)
 
 ### Fixes
