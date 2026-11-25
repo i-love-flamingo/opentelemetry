@@ -1,5 +1,19 @@
 # Changelog
 
+## Version v0.3.7 (2026-11-25)
+
+### Chores and tidying
+
+- **deps:** update module flamingo.me/flamingo/v3 to v3.17.6 (#127) (9f2f598a)
+- **deps:** update module github.com/vektra/mockery/v3 to v3.9.2 (#132) (4de754a8)
+- **deps:** update module github.com/prometheus/client_golang to v1.25.0 (#123) (c4ccda41)
+- **deps:** update opentelemetry-go-contrib monorepo to v0.72.0 (#110) (a09509a9)
+- **deps:** update opentelemetry-go monorepo (#122) (1d486ce9)
+- **deps:** update module go.opentelemetry.io/otel/sdk to v1.47.0 [security] (#130) (ab5e2723)
+- consolidate renovate config (#121) (99ca8ebe)
+- **deps:** update dependency golangci/golangci-lint to v2.15.0 (#126) (f0851a2d)
+- **deps:** update module github.com/vektra/mockery/v3 to v3.9.1 (#128) (69e08fe5)
+
 ## Version v0.3.6 (2026-10-01)
 
 ### Fixes
