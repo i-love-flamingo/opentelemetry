@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	flamingo.me/dingo v0.4.1
 	flamingo.me/flamingo/v3 v3.17.4
-	github.com/prometheus/client_golang v1.24.1
+	github.com/prometheus/client_golang v1.25.0
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0
